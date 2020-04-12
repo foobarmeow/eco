@@ -38,7 +38,8 @@ type Transaction struct {
 
 // Market coordinates transactions of goods
 type Market struct {
-	OrderChannel chan Order
+	OrderChannel  chan Order
+	ReportChannel chan chan []string
 
 	inventoryMap map[string][]Inventory
 	rwLock       sync.Mutex
@@ -50,10 +51,11 @@ type Market struct {
 // NewMarket returns a new Markey
 func NewMarket() Market {
 	return Market{
-		OrderChannel: make(chan Order, 100),
-		inventoryMap: map[string][]Inventory{},
-		rwLock:       sync.Mutex{},
-		quit:         make(chan bool),
+		ReportChannel: make(chan chan []string),
+		OrderChannel:  make(chan Order, 100),
+		inventoryMap:  map[string][]Inventory{},
+		rwLock:        sync.Mutex{},
+		quit:          make(chan bool),
 	}
 }
 
@@ -72,6 +74,9 @@ func (m *Market) ProcessOrders() {
 	count := 0
 	for {
 		select {
+		case returnChan := <-m.ReportChannel:
+			returnChan <- m.Report()
+			continue
 		case order := <-m.OrderChannel:
 			count++
 
@@ -274,8 +279,10 @@ func (m *Market) Read(key string) <-chan Inventory {
 }
 
 func (m *Market) Report() []string {
+	m.rwLock.Lock()
 	defer func() {
 		m.report = MarketReport{}
+		m.rwLock.Unlock()
 	}()
 
 	stock := 0

@@ -7,12 +7,11 @@ import (
 	"eco/lib/consumable"
 	"eco/lib/producer"
 	"flag"
-	"fmt"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/olekukonko/tablewriter"
 	"math/rand"
 	"os"
-	"sort"
+	//"sort"
 	"sync"
 	"time"
 )
@@ -62,28 +61,63 @@ func main() {
 	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
 	wg := sync.WaitGroup{}
 	d := time.Now()
+
+	report := make(chan chan bool)
+	reports := make(chan []string)
+
+	// Collect agent reports and report them in a table
+	go func() {
+		records := [][]string{}
+		for {
+			select {
+			case done := <-report:
+				// Render Agents table
+				agentsTable := tablewriter.NewWriter(os.Stdout)
+				agentsTable.SetHeader([]string{"Name", "Greed", "Cash", "Consumables", "Market Sent", "Produced", "Revenue"})
+				agentsTable.AppendBulk(records)
+				records = [][]string{}
+
+				// Render Market table
+				returnedRecord := make(chan []string)
+				m.ReportChannel <- returnedRecord
+				r := <-returnedRecord
+				marketTable := tablewriter.NewWriter(os.Stdout)
+				marketTable.SetHeader([]string{"Sold", "Received", "Total Cash Flow", "Avg Price", "Stock"})
+				marketTable.Append(r)
+
+				if !suppressTables {
+					agentsTable.Render()
+					marketTable.Render()
+				}
+
+				done <- true
+			case r := <-reports:
+				records = append(records, r)
+			}
+		}
+	}()
+
 	for {
 		select {
 		case <-ticker.C:
-			d = time.Now()
 			wg.Add(len(agents))
 			for i := range agents {
 				a := &agents[i]
 				go func() {
-					a.ReceiveTick(time.Now())
+					reports <- a.Actions()
 					wg.Done()
 				}()
 			}
-			lib.Log("WAIT TICK")
 			wg.Wait()
+
+			d = time.Now()
 			lib.Log("tick", time.Since(d))
 
+			resume := make(chan bool)
+			report <- resume
+			<-resume
+
 			if step {
-				fmt.Println("")
-				if !suppressTables {
-					Report(agents)
-					MarketReport(m.Report())
-				}
 				input := bufio.NewScanner(os.Stdin)
 				input.Scan()
 			}
@@ -92,32 +126,9 @@ func main() {
 				continue
 			}
 			m.Quit()
-			Report(agents)
-			MarketReport(m.Report())
 			return
 		}
 	}
-}
-
-func MarketReport(report []string) {
-	// Render Market table
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Sold", "Received", "Total Cash Flow", "Avg Price", "Stock"})
-	table.Append(report)
-	table.Render()
-}
-
-func Report(agents []lib.Agent) {
-	// Render agent table
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Greed", "Cash", "Consumables", "Market Sent", "Produced", "Revenue"})
-	sort.Slice(agents, func(i, j int) bool {
-		return agents[i].Cash > agents[j].Cash
-	})
-	for i := range agents {
-		table.Append(agents[i].ReportRecord())
-	}
-	table.Render()
 }
 
 func NewRandomizedConsumer(m *lib.Market, l *lib.LaborMarket) lib.Agent {

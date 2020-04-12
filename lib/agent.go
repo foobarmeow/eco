@@ -5,7 +5,6 @@ import (
 	"eco/lib/producer"
 	"fmt"
 	"sync"
-	"time"
 )
 
 // Agent is the primary struct responsible for acting on the market.
@@ -58,10 +57,6 @@ func (a *Agent) Quit() {
 	a.quit <- true
 }
 
-func (a *Agent) ReceiveTick(t time.Time) {
-	a.Actions()
-}
-
 func (a *Agent) SendToMarket() {
 	for k, inv := range a.Inventory {
 		price := inv.Cost / float64(len(inv.Goods))
@@ -81,7 +76,7 @@ func (a *Agent) SendToMarket() {
 	}
 }
 
-func (a *Agent) Actions() {
+func (a *Agent) Actions() []string {
 	// lock and get an image of our cash
 	a.rwLock.Lock()
 	cash := a.Cash
@@ -103,6 +98,7 @@ func (a *Agent) Actions() {
 		a.EmploymentSought = true
 	}
 
+	return a.ReportRecord()
 }
 
 func (a *Agent) FillDemands(cash float64) {
@@ -149,6 +145,7 @@ func (a *Agent) Produce(cash float64) {
 		if estimate > cash {
 			// We can't produce one cylce,
 			// let alone many
+			fmtDebug("%s cannot afford any production cylces.", a.Name)
 			continue
 		}
 
@@ -233,9 +230,6 @@ func (a *Agent) ReceiveCash(amount float64, memo string, from string) {
 	}
 }
 
-func (a *Agent) DeductCash(cost float64, memo string, from string) {
-}
-
 func (a *Agent) ProcessTransactions() {
 	for {
 		select {
@@ -305,6 +299,8 @@ func (a *Agent) ProcessTransactions() {
 }
 
 func (a *Agent) ReportRecord() []string {
+	a.rwLock.Lock()
+	defer a.rwLock.Unlock()
 	//defer func() {
 	//	a.Report = Report{}
 	//}()

@@ -6,17 +6,6 @@ import (
 
 const KeyOrchard = "orchard"
 
-type Orchard interface {
-	Rate() int
-	Wage() float64
-	Cost() float64
-	Value() float64
-	Key() string
-	Type() consumable.Consumable
-	Produce() (float64, float64, []consumable.Consumable)
-	Estimate() float64
-}
-
 type orchard struct {
 	rate           int
 	productionType consumable.Consumable
@@ -27,7 +16,7 @@ type orchard struct {
 	products       []consumable.Consumable
 }
 
-func NewOrchard() Orchard {
+func NewOrchard() Producer {
 	return &orchard{
 		rate:     10,
 		cost:     1,

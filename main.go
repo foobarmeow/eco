@@ -58,7 +58,7 @@ func main() {
 
 	// Send ticks to each agent
 	timeoutChan := time.After(time.Duration(timeout) * time.Second)
-	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
+	//ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
 	wg := sync.WaitGroup{}
 	d := time.Now()
 
@@ -99,7 +99,14 @@ func main() {
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-timeoutChan:
+			if step {
+				continue
+			}
+			m.Quit()
+			return
+		default:
+			d = time.Now()
 			wg.Add(len(agents))
 			for i := range agents {
 				a := &agents[i]
@@ -110,23 +117,15 @@ func main() {
 			}
 			wg.Wait()
 
-			d = time.Now()
-			lib.Log("tick", time.Since(d))
-
 			resume := make(chan bool)
 			report <- resume
 			<-resume
+			fmt.Println("tick", time.Since(d))
 
 			if step {
 				input := bufio.NewScanner(os.Stdin)
 				input.Scan()
 			}
-		case <-timeoutChan:
-			if step {
-				continue
-			}
-			m.Quit()
-			return
 		}
 	}
 }

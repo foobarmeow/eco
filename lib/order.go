@@ -33,7 +33,6 @@ func (o *Order) PurchasableQuantity(inv Inventory) int {
 	if !o.CanAffordQuantityAt(quantity, inv) {
 		// Propose that they only buy what they can afford
 		if r := math.Remainder(o.Cash, inv.Price); r > 1.0 {
-			log(o.Index, r, o.Cash, inv.Price)
 			return int(r)
 		}
 		return 0

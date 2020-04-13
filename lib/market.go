@@ -104,7 +104,7 @@ func (m *Market) ProcessOrders() {
 				// At this point we want to purchase it
 				// Do so synchronously
 				// Give the purchaser a chance to decline
-				invChan, confirm := m.PopConfirm(key)
+				invChan, confirm := m.PopNConfirm(key, quantity)
 				inv := <-invChan
 				if len(inv.Goods) == 0 {
 					fmtDebug("\tOrder %d: no supply\n", count)
@@ -219,6 +219,45 @@ func (m *Market) Pop(key string) <-chan Inventory {
 	return c
 }
 
+func (m *Market) PopNConfirm(key string, quantity int) (<-chan Inventory, chan bool) {
+	c := make(chan Inventory)
+	confirm := make(chan bool)
+	go func() {
+		m.rwLock.Lock()
+		defer m.rwLock.Unlock()
+		defer close(c)
+
+		var inventory Inventory
+		inventories, ok := m.inventoryMap[key]
+		if !ok || len(inventories) < 1 {
+			go func() { c <- Inventory{} }()
+			return
+		}
+
+		inventory, inventories = inventories[0], inventories[1:]
+
+		go func(i Inventory) {
+			i.Goods = i.Goods[0:quantity]
+			log("SENDING", len(i.Goods), quantity)
+			c <- i
+		}(inventory)
+
+		if <-confirm {
+			if len(inventory.Goods) != quantity {
+				// Replace the inventory minus what was purchased
+				inventory.Goods = inventory.Goods[quantity:]
+				log("REPLACEING", len(inventory.Goods))
+				inventories = append(inventories, inventory)
+				m.inventoryMap[key] = inventories
+				return
+			}
+			m.inventoryMap[key] = inventories
+		}
+	}()
+
+	return c, confirm
+}
+
 func (m *Market) PopConfirm(key string) (<-chan Inventory, chan bool) {
 	c := make(chan Inventory)
 	confirm := make(chan bool)
@@ -284,9 +323,10 @@ func (m *Market) Report() []string {
 	stock := 0
 	for _, inventories := range m.inventoryMap {
 		for _, inv := range inventories {
-			stock = len(inv.Goods)
+			stock += len(inv.Goods)
 		}
 	}
+	log(stock)
 
 	avg := 0.0
 	if m.report.TotalCashFlow > 0.0 {

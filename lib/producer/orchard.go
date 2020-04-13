@@ -63,7 +63,7 @@ func (o *orchard) Produce() (float64, float64, []consumable.Consumable) {
 		products = append(products, o.Type().Clone())
 	}
 	wage := float64(o.rate) * o.wage
-	cost := (float64(o.rate) * o.cost) + wage
+	cost := (float64(o.rate) * o.cost)
 	return cost, wage, products
 }
 

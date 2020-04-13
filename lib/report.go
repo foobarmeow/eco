@@ -15,3 +15,11 @@ type Report struct {
 	Hired         int
 	Fired         int
 }
+
+type MarketReport struct {
+	TotalCashFlow    float64
+	TotalProductFlow int
+	ProductReceived  int
+	ProductSold      int
+	AveragePrice     float64
+}

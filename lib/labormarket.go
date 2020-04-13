@@ -41,7 +41,6 @@ func (m *LaborMarket) Shift() <-chan LaborContract {
 		if len(m.labor) < 1 {
 			return
 		}
-		log("b", m.labor)
 
 		l, labor := m.labor[0], m.labor[1:]
 		m.labor = labor

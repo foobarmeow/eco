@@ -6,6 +6,7 @@ import (
 	"eco/lib"
 	"eco/lib/consumable"
 	"eco/lib/producer"
+	//"eco/lib/ui"
 	"flag"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/olekukonko/tablewriter"
@@ -58,12 +59,12 @@ func main() {
 
 	// Send ticks to each agent
 	timeoutChan := time.After(time.Duration(timeout) * time.Second)
-	//ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
 	wg := sync.WaitGroup{}
-	d := time.Now()
 
 	report := make(chan chan bool)
 	reports := make(chan []string)
+
+	//graph := ui.NewMarketGraph()
 
 	// Collect agent reports and report them in a table
 	go func() {
@@ -76,6 +77,8 @@ func main() {
 				agentsTable.SetHeader([]string{"Name", "Greed", "Cash", "Consumables", "Market Sent", "Produced", "Revenue"})
 				agentsTable.AppendBulk(records)
 				records = [][]string{}
+
+				//graph.Update(m.MarketReport())
 
 				// Render Market table
 				returnedRecord := make(chan []string)
@@ -106,7 +109,7 @@ func main() {
 			m.Quit()
 			return
 		default:
-			d = time.Now()
+			//d := time.Now()
 			wg.Add(len(agents))
 			for i := range agents {
 				a := &agents[i]
@@ -120,7 +123,7 @@ func main() {
 			resume := make(chan bool)
 			report <- resume
 			<-resume
-			fmt.Println("tick", time.Since(d))
+			//lib.Log("tick", time.Since(d))
 
 			if step {
 				input := bufio.NewScanner(os.Stdin)
@@ -128,6 +131,8 @@ func main() {
 			}
 		}
 	}
+
+	//graph.Start()
 }
 
 func NewRandomizedConsumer(m *lib.Market, l *lib.LaborMarket) lib.Agent {

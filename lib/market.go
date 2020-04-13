@@ -8,14 +8,6 @@ import (
 	"time"
 )
 
-type MarketReport struct {
-	TotalCashFlow    float64
-	TotalProductFlow int
-	ProductReceived  int
-	ProductSold      int
-	AveragePrice     float64
-}
-
 // Transaction holds all relevant information
 // about a transaction. Employment changes occur
 // via transactions as well as all market transactions.
@@ -140,9 +132,9 @@ func (m *Market) ProcessOrders() {
 
 				confirm <- true
 
-				price := float64(len(inv.Goods)) * inv.Price
+				price := float64(quantity) * inv.Price
 
-				m.report.ProductSold += len(inv.Goods)
+				m.report.ProductSold += quantity
 				m.report.TotalCashFlow += price
 
 				// Send money to originator
@@ -278,10 +270,14 @@ func (m *Market) Read(key string) <-chan Inventory {
 	return c
 }
 
+func (m *Market) MarketReport() MarketReport {
+	return m.report
+}
+
 func (m *Market) Report() []string {
 	m.rwLock.Lock()
 	defer func() {
-		m.report = MarketReport{}
+		//m.report = MarketReport{}
 		m.rwLock.Unlock()
 	}()
 

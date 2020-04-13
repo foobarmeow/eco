@@ -2,7 +2,6 @@ package lib
 
 import (
 	"eco/lib/consumable"
-	"math"
 )
 
 type Order struct {
@@ -32,8 +31,9 @@ func (o *Order) PurchasableQuantity(inv Inventory) int {
 
 	if !o.CanAffordQuantityAt(quantity, inv) {
 		// Propose that they only buy what they can afford
-		if r := math.Remainder(o.Cash, inv.Price); r > 1.0 {
-			return int(r)
+		div := o.Cash / inv.Price
+		if div > 1 {
+			return int(div)
 		}
 		return 0
 	}

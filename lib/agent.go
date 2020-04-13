@@ -145,7 +145,7 @@ func (a *Agent) Produce(cash float64) {
 		if estimate > cash {
 			// We can't produce one cylce,
 			// let alone many
-			fmtDebug("%s cannot afford any production cylces.", a.Name)
+			fmtDebug("%s cannot afford any production cylces.\n", a.Name)
 			continue
 		}
 

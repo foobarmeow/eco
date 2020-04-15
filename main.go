@@ -141,11 +141,11 @@ func NewRandomizedConsumer(m *lib.Market, l *lib.LaborMarket) lib.Agent {
 	a := lib.NewAgent(m, l)
 	a.Name = randomdata.LastName()
 	a.SeeksWage = true
-	a.Cash = float64(rand.Intn(200-20) + 20)
+	a.Cash = float64(rand.Intn(200000-20000) + 20000)
 	a.Demands = []consumable.Demand{
 		{
 			Consumable: consumable.NewApple(),
-			Quantity:   rand.Intn(1000-200) + 200,
+			Quantity:   rand.Intn(10000-200) + 200,
 		},
 	}
 	return a
@@ -154,7 +154,7 @@ func NewRandomizedConsumer(m *lib.Market, l *lib.LaborMarket) lib.Agent {
 func NewRandomizedSupplier(m *lib.Market, l *lib.LaborMarket) lib.Agent {
 	a := lib.NewAgent(m, l)
 	a.Name = randomdata.State(randomdata.Large)
-	a.Cash = float64(rand.Intn(1000-200) + 200)
+	a.Cash = float64(rand.Intn(100000-2000) + 2000)
 	a.Greed = rand.Intn(200-20) + 20
 	a.Producers = append(a.Producers, producer.NewOrchard())
 	a.Inventory = map[string]lib.Inventory{}

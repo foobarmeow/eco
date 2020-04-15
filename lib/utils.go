@@ -8,7 +8,7 @@ var Debug bool
 var Verbose bool
 
 func Log(args ...interface{}) {
-	log(args)
+	log(args...)
 }
 
 func log(args ...interface{}) {

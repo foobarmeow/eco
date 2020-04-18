@@ -30,7 +30,7 @@ func main() {
 	rand.Seed(time.Now().Unix())
 
 	flag.IntVar(&interval, "i", 100, "tick interval in ms")
-	flag.IntVar(&timeout, "t", 10, "sim timeout")
+	flag.IntVar(&timeout, "t", 0, "sim timeout")
 	flag.IntVar(&agentCount, "ac", 10, "count of agents")
 	flag.IntVar(&supplierCount, "sc", 3, "count of suppliers")
 	flag.BoolVar(&verbose, "v", false, "print logs")
@@ -58,7 +58,11 @@ func main() {
 	}
 
 	// Send ticks to each agent
-	timeoutChan := time.After(time.Duration(timeout) * time.Second)
+	var timeoutChan <-chan time.Time
+	if timeout > 0 {
+		timeoutChan = time.After(time.Duration(timeout) * time.Second)
+	}
+
 	wg := sync.WaitGroup{}
 
 	report := make(chan chan bool)
@@ -110,7 +114,6 @@ func main() {
 				m.Quit()
 				return
 			default:
-				//d := time.Now()
 				wg.Add(len(agents))
 				for i := range agents {
 					a := &agents[i]
@@ -124,7 +127,6 @@ func main() {
 				resume := make(chan bool)
 				report <- resume
 				<-resume
-				//lib.Log("tick", time.Since(d))
 
 				if step {
 					input := bufio.NewScanner(os.Stdin)
@@ -141,7 +143,7 @@ func NewRandomizedConsumer(m *lib.Market, l *lib.LaborMarket) lib.Agent {
 	a := lib.NewAgent(m, l)
 	a.Name = randomdata.LastName()
 	a.SeeksWage = true
-	a.Cash = float64(rand.Intn(200000-20000) + 20000)
+	a.Cash = RandomCash()
 	a.Demands = []consumable.Demand{
 		{
 			Consumable: consumable.NewApple(),
@@ -154,11 +156,15 @@ func NewRandomizedConsumer(m *lib.Market, l *lib.LaborMarket) lib.Agent {
 func NewRandomizedSupplier(m *lib.Market, l *lib.LaborMarket) lib.Agent {
 	a := lib.NewAgent(m, l)
 	a.Name = randomdata.State(randomdata.Large)
-	a.Cash = float64(rand.Intn(100000-2000) + 2000)
+	a.Cash = RandomCash()
 	a.Greed = rand.Intn(200-20) + 20
 	a.Producers = append(a.Producers, producer.NewOrchard())
 	a.Inventory = map[string]lib.Inventory{}
 	return a
+}
+
+func RandomCash() float64 {
+	return float64(rand.Intn(2000-500) + 500)
 }
 
 func GenerateConsumers(count int, m *lib.Market, l *lib.LaborMarket) []lib.Agent {

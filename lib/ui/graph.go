@@ -44,10 +44,9 @@ type Graph struct {
 }
 
 func NewGraph() *Graph {
-	return &Graph{}
 	a := app.New()
 	w := a.NewWindow("eco")
-	w.Resize(fyne.Size{800, 500})
+	w.Resize(fyne.Size{400, 300})
 
 	g := &Graph{
 		chart:  chart.Chart{},
@@ -63,17 +62,22 @@ func NewGraph() *Graph {
 }
 
 func (g *Graph) Start() {
-	c := make(chan bool)
-	<-c
-	//g.window.ShowAndRun()
+	g.window.ShowAndRun()
+}
+
+func (g *Graph) FormatTickFunc() func(interface{}) string {
+	return func(tick interface{}) string {
+		return fmt.Sprintf("%.0f", tick)
+	}
 }
 
 func (g *Graph) render(new *lib.MarketReport) *fyne.Container {
 	if new == nil {
 		g.chart.Series = []chart.Series{
 			chart.ContinuousSeries{
-				XValues: []float64{0},
-				YValues: []float64{0},
+				XValueFormatter: chart.ValueFormatter(g.FormatTickFunc()),
+				XValues:         []float64{0},
+				YValues:         []float64{0},
 			},
 		}
 		g.product = [][]int{{0, 0}}
@@ -105,7 +109,6 @@ func (g *Graph) render(new *lib.MarketReport) *fyne.Container {
 }
 
 func (g *Graph) Update(report lib.MarketReport) {
-	return
 	g.tick++
 
 	g.lastReport = &g.report

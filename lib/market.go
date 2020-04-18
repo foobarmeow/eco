@@ -236,17 +236,15 @@ func (m *Market) PopNConfirm(key string, quantity int) (<-chan Inventory, chan b
 
 		inventory, inventories = inventories[0], inventories[1:]
 
-		go func(i Inventory) {
+		go func(i Inventory, quantity int) {
 			i.Goods = i.Goods[0:quantity]
-			log("SENDING", len(i.Goods), quantity)
 			c <- i
-		}(inventory)
+		}(inventory, quantity)
 
 		if <-confirm {
 			if len(inventory.Goods) != quantity {
 				// Replace the inventory minus what was purchased
 				inventory.Goods = inventory.Goods[quantity:]
-				log("REPLACEING", len(inventory.Goods))
 				inventories = append(inventories, inventory)
 				m.inventoryMap[key] = inventories
 				return
@@ -310,13 +308,15 @@ func (m *Market) Read(key string) <-chan Inventory {
 }
 
 func (m *Market) MarketReport() MarketReport {
+	defer func() {
+		m.report = MarketReport{}
+	}()
 	return m.report
 }
 
 func (m *Market) Report() []string {
 	m.rwLock.Lock()
 	defer func() {
-		//m.report = MarketReport{}
 		m.rwLock.Unlock()
 	}()
 
